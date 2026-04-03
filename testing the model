@@ -5,137 +5,71 @@ import os
 from pathlib import Path
 from tabulate import tabulate
 from colorama import Fore, Style, init
-from utils import clean_numeric, attendance_to_num, resource_to_cat, scale_midsem_to_endsem
+from utilities import clean_numeric, scale_midsem_to_endsem
 
-# Initialize colorama for Windows compatibility
 init(autoreset=True)
 
 DATA_CSV = "cleaned_dataset.csv"
-SUBJECTS = ["Math", "Python", "Physics", "EG"]
+# Updated to match the new config
+SUBJECTS = ["Math", "ECE", "Clanguage", "EG"]
 
 def load_models():
     models = {}
     for subj in SUBJECTS:
         model_file = f"{subj}_grade_model.pkl"
         if Path(model_file).exists():
-            try:
-                models[subj] = joblib.load(model_file)
-            except Exception as e:
-                print(Fore.YELLOW + f"Warning: Could not load {model_file}: {e}")
+            models[subj] = joblib.load(model_file)
     return models
-
-def survey_recommendations(df, roll, subj, subject_col):
-    recs = []
-    
-    # Ensure the column exists before processing
-    if subject_col not in df.columns:
-        return ["Subject data not found in CSV for recommendations."]
-
-    # Use a copy to avoid SettingWithCopyWarning
-    df = df.copy()
-    
-    # Scaling logic based on your utils
-    scale_factor_in = 25 if "_25" in subject_col else 20
-    scale_factor_out = 75 if "_25" in subject_col else 60
-    
-    df["ScaledTotal"] = df[subject_col].apply(lambda x: scale_midsem_to_endsem(clean_numeric(x), scale_factor_in, scale_factor_out))
-    
-    valid = df.dropna(subset=["ScaledTotal"])
-    if len(valid) == 0:
-        return ["Not enough class data to analyze trends."]
-
-    cutoff = valid["ScaledTotal"].quantile(0.70)
-    top = valid[valid["ScaledTotal"] >= cutoff]
-
-    if "Resource" in top.columns:
-        res_mode = top["Resource"].dropna().mode()
-        if not res_mode.empty:
-            recs.append(f"Most top performers used: {res_mode.iloc[0]}.")
-
-    if "Attendance" in top.columns:
-        att_mode = top["Attendance"].dropna().mode()
-        if not att_mode.empty:
-            recs.append(f"Average top attendance: {att_mode.iloc[0]}.")
-
-    rate_col = f"{subj.upper()}_Rate"
-    if rate_col in top.columns:
-        avg_rating = top[rate_col].apply(clean_numeric).mean()
-        if not np.isnan(avg_rating):
-            recs.append(f"Top students rated faculty quality: {avg_rating:.1f}/5.")
-
-    return recs
 
 def predict_for_student(roll, subject, models):
     if subject not in models:
-        print(Fore.RED + f"Error: No trained model found for {subject}. Ensure {subject}_grade_model.pkl exists.")
+        print(Fore.RED + f"Error: No model found for {subject}.")
         return
-
-    if not os.path.exists(DATA_CSV):
-        print(Fore.RED + f"Error: {DATA_CSV} not found.")
-        return
-
-    model_data = models[subject]
-    model = model_data["model"]
-    trained_features = model_data["features"]
-    subject_col = model_data.get("mid_col", "")
 
     df = pd.read_csv(DATA_CSV)
-    row = df[df["RollNo"].astype(str) == str(roll)] # Robust string comparison
+    # Robust string comparison for Roll Number 
+    row = df[df["RollNo"].astype(str) == str(roll)]
 
     if row.empty:
         print(Fore.RED + f"No data found for Roll No: {roll}")
         return
 
-    # Build feature vector ensuring EXACT order as training
+    model_data = models[subject]
+    model = model_data["model"]
+    trained_features = model_data["features"]
+
+    # Reconstruct features exactly as they were during training [cite: 9]
     input_data = {}
     for f in trained_features:
         if f in row.columns:
-            val = row.iloc[0][f]
-            input_data[f] = clean_numeric(val) if not pd.isna(val) else 0
+            input_data[f] = clean_numeric(row.iloc[0][f])
+        elif f == "Attendance_num":
+            from utilities import attendance_to_num
+            input_data[f] = attendance_to_num(row.iloc[0]["Attendance"])
         else:
-            input_data[f] = 0
-    
-    # Convert to DataFrame with specific column order
+            input_data[f] = 0 # Default for one-hot columns not present for this student
+
     x = pd.DataFrame([input_data])[trained_features]
-
-    # Predict
     pred = model.predict(x)[0]
-    probs = dict(zip(model.classes_, model.predict_proba(x)[0]))
-
-    # Insights
-    recs = survey_recommendations(df, roll, subject, subject_col)
-
-    # UI Output
+    
     print("\n" + "═"*45)
-    print(Fore.CYAN + Style.BRIGHT + f" 🎓 PREDICTION REPORT: {roll} ".center(45))
-    print("═"*45)
     print(f" Subject: {Fore.YELLOW}{subject}")
     print(f" Predicted Grade: {Fore.GREEN}{Style.BRIGHT}{pred}")
-    print("\n" + Fore.WHITE + " Confidence Levels:")
-    
-    prob_table = [[g, f"{p*100:.1f}%"] for g, p in probs.items()]
-    print(tabulate(prob_table, headers=["Grade", "Confidence"], tablefmt="simple"))
-    
-    if recs:
-        print("\n" + Fore.CYAN + " 📊 Peer Insights (Top 30% Trend):")
-        for r in recs:
-            print(f"  • {r}")
     print("═"*45)
 
 def main():
-    print(Fore.BLUE + Style.BRIGHT + "\n=== STUDENT PERFORMANCE PREDICTOR ===")
-    
     models = load_models()
     if not models:
-        print(Fore.RED + "No models loaded. Please run training first.")
+        print(Fore.RED + "No models found. Run train_model.py first.")
         return
 
     roll = input("Enter Roll Number: ").strip()
-    print(f"Available: {', '.join(models.keys())}")
-    subject = input("Enter Subject: ").strip().capitalize()
+    print(f"Available Subjects: {', '.join(models.keys())}")
+    subject = input("Enter Subject: ").strip()
     
-    # Map "Eg" to "EG" if necessary
-    if subject == "Eg": subject = "EG"
+    # Simple normalization for input
+    if subject.lower() == "math": subject = "Math"
+    if subject.lower() == "ece": subject = "ECE"
     
     predict_for_student(roll, subject, models)
 
