@@ -82,4 +82,40 @@ def train():
         X = pd.concat([X, resource_dummies], axis=1)
         
         # Ensure all columns are numeric for the median fill
-        X =
+        X = X.fillna(X.median(numeric_only=True))
+        y = train_df[f"{subj}_Grade"].astype(str)
+
+        # (5) Train/Test Split (Added safety for stratify)
+        class_counts = y.value_counts()
+        can_stratify = all(class_counts > 1) and (len(train_df) > 10)
+        
+        split_data = train_test_split(
+            X, y, test_size=0.2, random_state=RANDOM_STATE, 
+            stratify=y if can_stratify else None
+        )
+        X_train, X_test, y_train, y_test = split_data
+
+        # (6) Model Execution
+        clf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=RANDOM_STATE)
+        clf.fit(X_train, y_train)
+        
+        preds = clf.predict(X_test)
+        acc = accuracy_score(y_test, preds)
+
+        # (7) Save Model & the EXACT feature list
+        # This is critical so the testing script knows which columns to build
+        joblib.dump({
+            "model": clf, 
+            "features": X.columns.tolist(), 
+            "mid_col": mid_col
+        }, f"{subj}_grade_model.pkl")
+        
+        models_info[subj] = {"rows": len(train_df), "accuracy": acc}
+
+    print("\n🎓 Training complete. Summary:")
+    print("-" * 30)
+    for subj, info in models_info.items():
+        print(f" - {subj:8}: {info['rows']} rows, Accuracy: {info['accuracy']*100:.2f}%")
+
+if __name__ == "__main__":
+    train()
