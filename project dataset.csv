@@ -1,25 +1,25 @@
 import pandas as pd
 
 # The data you provided
-data = """Math_25,ECE_20,Clanguage_20,EG_20,Attendance,Resource
-22,18,17,19,High,YouTube
-10,8,7,9,Low,Books
-15,12,14,11,Medium,Notes
-24,19,20,18,High,YouTube
-5,4,6,3,Low,Other
-18,15,14,16,Medium,Notes
-21,17,18,17,High,YouTube
-12,9,10,8,Low,Other
-16,13,12,14,Medium,Books
-23,19,19,20,High,YouTube
-11,7,8,10,Low,Notes
-14,11,13,12,Medium,Books
-20,16,17,15,High,YouTube
-9,6,5,7,Low,Other
-17,14,15,13,Medium,Notes
-25,20,19,19,High,YouTube
-8,5,6,4,Low,Books
-13,10,11,9,Medium,Other
-19,15,16,18,High,Notes
-7,4,5,6,Low,Other
+data = """ROLL NO, Math_25,ECE_20,Clanguage_20,EG_20,Attendance,Resource
+1,22,18,17,19,High,YouTube
+2,10,8,7,9,Low,Books
+3,15,12,14,11,Medium,Notes
+4,24,19,20,18,High,YouTube
+5,5,4,6,3,Low,Other
+6,18,15,14,16,Medium,Notes
+7,7,17,18,17,High,YouTube
+8,8,9,10,8,Low,Other
+9,19,13,12,14,Medium,Books
+10,12,19,19,20,High,YouTube
+11,11,7,8,10,Low,Notes
+12,12,11,13,12,Medium,Books
+13,20,16,17,15,High,YouTube
+14,9,6,5,7,Low,Other
+15,8,14,15,13,Medium,Notes
+16,9,20,19,19,High,YouTube
+17,8,5,6,4,Low,Books
+18,13,10,11,9,Medium,Other
+19,19,15,16,18,High,Notes
+20,7,4,5,6,Low,Other
 
