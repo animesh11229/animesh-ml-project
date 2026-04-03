@@ -16,8 +16,8 @@ CSV_PATH = "cleaned_dataset.csv"
 # Updated SUBJECT_CONFIG to match your available subjects
 SUBJECT_CONFIG = {
     "Math": {"mid_col": "Math_25", "mid_out": 25, "total_out": 75},
-    "Python": {"mid_col": "Python_20", "mid_out": 20, "total_out": 60},
-    "Physics": {"mid_col": "Physics_20", "mid_out": 20, "total_out": 60},
+    "ECE": {"mid_col": "ECE_20", "mid_out": 20, "total_out": 60},
+    "Clanguage": {"mid_col": "Clanguage_20", "mid_out": 20, "total_out": 60},
     "EG": {"mid_col": "EG_20", "mid_out": 20, "total_out": 60}
 }
 RANDOM_STATE = 42
